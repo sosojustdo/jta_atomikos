@@ -9,13 +9,15 @@
 
 	<name>atomikos Maven Webapp</name>
 	<url>http://maven.apache.org</url>
-
+	
+	<!-- 
 	<repositories>
 		<repository>
-			<id>LingLingBangNexus</id>
-			<url>http://121.42.49.51:8081/nexus/content/groups/public/</url>
+			<id>xx</id>
+			<url>your nexus local address</url>
 		</repository>
 	</repositories>
+	 -->
 
 	<properties>
 		<java-version>1.7</java-version>

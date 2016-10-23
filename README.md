@@ -1,1 +1,1 @@
-# jat atomikos demo
+# jta atomikos demo

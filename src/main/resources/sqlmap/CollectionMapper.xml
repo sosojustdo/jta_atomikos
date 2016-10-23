@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.atomikos.a.dao.CollectionMapper">
+  <resultMap id="BaseResultMap" type="com.test.atomikos.model.Collect">
+    <id column="collection_id" jdbcType="BIGINT" property="collectionId" />
+    <result column="collection_target_id" jdbcType="BIGINT" property="collectionTargetId" />
+    <result column="operation_type_id" jdbcType="BIGINT" property="operationTypeId" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="creation_date" jdbcType="TIMESTAMP" property="creationDate" />
+  </resultMap>
+  
+  <sql id="Base_Column_List">
+    collection_id, collection_target_id, operation_type_id, user_id, creation_date
+  </sql>
+  
+  <sql id="Base_Where" >
+	   <if test="collectionId != null" > and collection_id=#{collectionId} </if>
+	   <if test="collectionTargetId != null" > and collection_target_id=#{collectionTargetId} </if>
+	   <if test="operationTypeId != null" > and operation_type_id=#{operationTypeId} </if>
+	   <if test="userId != null" > and user_id=#{userId} </if>
+  </sql>
+  
+  <select id="collectionTargetIds" resultType="java.lang.Long">
+    select collection_target_id from collection where 1=1 
+	<if test="userId != null" > and user_id=#{userId} </if>
+    <if test="operationTypeId != null" > and operation_type_id=#{operationTypeId} </if>
+    limit #{offSet}, #{pageSize}
+  </select>
+  
+  <select id="findCollectCount" parameterType="java.util.Map" resultType="java.lang.Long">
+    select count(1) from collection where 1=1 <include refid="Base_Where" />
+  </select>
+  
+  <select id="findCollectByParams" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select <include refid="Base_Column_List" /> from collection where 1=1 <include refid="Base_Where" />
+  </select>
+  
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from collection
+    where collection_id = #{collectionId,jdbcType=BIGINT}
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from collection
+    where collection_id = #{collectionId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com.test.atomikos.model.Collect" useGeneratedKeys="true" keyProperty="collectionId">
+    insert into collection (collection_id, collection_target_id, operation_type_id, 
+      user_id, creation_date)
+    values (#{collectionId,jdbcType=BIGINT}, #{collectionTargetId,jdbcType=BIGINT}, #{operationTypeId,jdbcType=BIGINT}, 
+      #{userId,jdbcType=BIGINT}, #{creationDate,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.test.atomikos.model.Collect">
+    insert into collection
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="collectionId != null">
+        collection_id,
+      </if>
+      <if test="collectionTargetId != null">
+        collection_target_id,
+      </if>
+      <if test="operationTypeId != null">
+        operation_type_id,
+      </if>
+      <if test="userId != null">
+        user_id,
+      </if>
+      <if test="creationDate != null">
+        creation_date,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="collectionId != null">
+        #{collectionId,jdbcType=BIGINT},
+      </if>
+      <if test="collectionTargetId != null">
+        #{collectionTargetId,jdbcType=BIGINT},
+      </if>
+      <if test="operationTypeId != null">
+        #{operationTypeId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="creationDate != null">
+        #{creationDate,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.test.atomikos.model.Collect">
+    update collection
+    <set>
+      <if test="collectionTargetId != null">
+        collection_target_id = #{collectionTargetId,jdbcType=BIGINT},
+      </if>
+      <if test="operationTypeId != null">
+        operation_type_id = #{operationTypeId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        user_id = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="creationDate != null">
+        creation_date = #{creationDate,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where collection_id = #{collectionId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.test.atomikos.model.Collect">
+    update collection
+    set collection_target_id = #{collectionTargetId,jdbcType=BIGINT},
+      operation_type_id = #{operationTypeId,jdbcType=BIGINT},
+      user_id = #{userId,jdbcType=BIGINT},
+      creation_date = #{creationDate,jdbcType=TIMESTAMP}
+    where collection_id = #{collectionId,jdbcType=BIGINT}
+  </update>
+</mapper>

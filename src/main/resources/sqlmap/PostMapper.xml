@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.atomikos.b.dao.PostMapper">
+  <resultMap id="BaseResultMap" type="com.test.atomikos.model.Post">
+    <id column="post_id" jdbcType="BIGINT" property="postId" />
+    <result column="post_type_id" jdbcType="BIGINT" property="postTypeId" />
+    <result column="post_title" jdbcType="VARCHAR" property="postTitle" />
+    <result column="post_show_count" jdbcType="INTEGER" property="postShowCount" />
+    <result column="post_share_count" jdbcType="INTEGER" property="postShareCount" />
+    <result column="post_forward_count" jdbcType="INTEGER" property="postForwardCount" />
+    <result column="post_content" jdbcType="VARCHAR" property="postContent" />
+    <result column="forward_post_id" jdbcType="BIGINT" property="forwardPostId" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="creation_date" jdbcType="TIMESTAMP" property="creationDate" />
+    <result column="is_top" jdbcType="INTEGER" property="isTop" />
+    <result column="top_expire_date" jdbcType="TIMESTAMP" property="topExpireDate" />
+    <result column="is_elite" jdbcType="INTEGER" property="isElite" />
+    <result column="is_recommend" jdbcType="INTEGER" property="isRecommend" />
+    <result column="is_public" jdbcType="INTEGER" property="isPublic" />
+    <result column="last_modifyed_date" jdbcType="TIMESTAMP" property="lastModifyedDate" />
+    <result column="operator_user_id" jdbcType="BIGINT" property="operatorUserId" />
+    <result column="operator_desc" jdbcType="INTEGER" property="operatorDesc" />
+  </resultMap>
+  
+  <sql id="Base_Column_List">
+    post_id, post_type_id, post_title, post_show_count, post_share_count, post_forward_count, 
+    post_content, forward_post_id, user_id, status, creation_date, is_top, 
+    top_expire_date, is_elite, is_recommend, is_public, last_modifyed_date, operator_user_id, 
+    operator_desc
+  </sql>
+  
+  <sql id="Base_Where" >
+	   <if test="postTypeId != null" > and post_type_id=#{postTypeId} </if>
+	   <if test="postId != null" > and post_id=#{postId} </if>
+	   <if test="userId != null" > and user_id=#{userId} </if>
+	   <if test="status != null" > and status=#{status} </if>
+	   <if test="isTop != null" > and is_top=#{isTop} </if>
+	   <if test="isElite != null" > and is_elite=#{isElite} </if>
+	   <if test="isPublic != null" > and is_public=#{isPublic} </if>
+	   <if test="isRecommend != null" > and is_recommend=#{isRecommend} </if>
+	   <if test="postIds != null">
+	    	and post_id in 
+	    	<foreach item="item" index="index" collection="postIds" open="(" separator="," close=")">
+	  			#{item}  
+	  		</foreach>
+	   </if>
+	</sql>
+	
+   <select id="findPostAndOrdersByIds" resultMap="BaseResultMap">
+	select <include refid="Base_Column_List" /> from post where 1=1 
+	<if test="postIds != null">
+    	and post_id in 
+    	<foreach item="item" index="index" collection="postIds" open="(" separator="," close=")">
+  			#{item}  
+  		</foreach>
+  		order by field(post_id,
+  		<foreach item="item" index="index" collection="postIds" separator=",">
+  			#{item}  
+  		</foreach>)
+   </if>
+  </select>
+	
+   <update id="updatePostShowCount">
+   	 UPDATE post SET post_show_count = post_show_count + 1 WHERE post_id = #{postId}
+   </update>
+	
+  <select id="findPostsByParams" parameterType="java.util.Map" resultMap="BaseResultMap">
+	select <include refid="Base_Column_List" /> from post where 1=1 <include refid="Base_Where" />
+  </select>
+  
+  <select id="findMyPosts" resultMap="BaseResultMap">
+	select <include refid="Base_Column_List" /> from post where status = 1 
+	<if test="userId != null" > and user_id=#{userId} </if>
+	order by creation_date desc limit #{offSet}, #{pageSize}
+  </select>
+  
+  <select id="findChannelLatestPosts" resultMap="BaseResultMap">
+  	select p.* from post as p, channel_ref_post as crp 
+  	where p.status = 1 
+  	and p.is_top = 0 
+  	and p.is_public = 0 
+  	and p.post_id = crp.post_id 
+  	<if test="channelId != null">
+  		and crp.channel_id = #{channelId} 
+  	</if>
+  	order by p.creation_date desc limit #{offSet}, #{pageSize}
+  </select>
+  
+  <select id="findChannelElitePosts" resultMap="BaseResultMap">
+  	select p.* from post as p, channel_ref_post as crp 
+  	where p.status = 1 
+  	and p.is_elite = 1 
+  	and p.post_id = crp.post_id 
+  	<if test="channelId != null">
+  		and crp.channel_id = #{channelId} 
+  	</if>
+  	order by p.creation_date desc limit #{offSet}, #{pageSize}
+  </select>
+  
+  <select id="findChannelQuestionPosts" resultMap="BaseResultMap">
+  	select p.* from post as p, channel_ref_post as crp 
+  	where p.status = 1 
+  	and p.post_type_id = 1 
+  	and p.post_id = crp.post_id 
+  	<if test="channelId != null">
+  		and crp.channel_id = #{channelId} 
+  	</if>
+  	order by p.creation_date desc limit #{offSet}, #{pageSize}
+  </select>
+  
+  <select id="getPublicAndTopPostsWithChannel" resultType="java.lang.Integer" >
+  	select count(po.post_operate_id) from post_operate as po, post as p where p.status = 1 and po.status = 1 and po.post_id = p.post_id and po.opera_type in(0,1) and po.post_id in 
+  	(select p1.post_id from post as p1, channel_ref_post as crp where p1.post_id = crp.post_id <if test="channelId != null"> and crp.channel_id = #{channelId} </if>)
+  </select>
+  
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from post
+    where post_id = #{postId,jdbcType=BIGINT}
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from post
+    where post_id = #{postId,jdbcType=BIGINT}
+  </delete>
+  
+  <insert id="insert" parameterType="com.test.atomikos.model.Post" useGeneratedKeys="true" keyProperty="postId">
+    insert into post (post_id, post_type_id, post_title, 
+      post_show_count, post_share_count, post_forward_count, 
+      post_content, forward_post_id, 
+      user_id, status, creation_date, 
+      is_top, top_expire_date, is_elite, 
+      is_recommend, is_public, last_modifyed_date, 
+      operator_user_id, operator_desc)
+    values (#{postId,jdbcType=BIGINT}, #{postTypeId,jdbcType=BIGINT}, #{postTitle,jdbcType=VARCHAR}, 
+      #{postShowCount,jdbcType=INTEGER}, #{postShareCount,jdbcType=INTEGER}, #{postForwardCount,jdbcType=INTEGER}, 
+      #{postContent,jdbcType=VARCHAR}, #{forwardPostId,jdbcType=BIGINT}, 
+      #{userId,jdbcType=BIGINT}, #{status,jdbcType=INTEGER}, #{creationDate,jdbcType=TIMESTAMP}, 
+      #{isTop,jdbcType=INTEGER}, #{topExpireDate,jdbcType=TIMESTAMP}, #{isElite,jdbcType=INTEGER}, 
+      #{isRecommend,jdbcType=INTEGER}, #{isPublic,jdbcType=INTEGER}, #{lastModifyedDate,jdbcType=TIMESTAMP}, 
+      #{operatorUserId,jdbcType=BIGINT}, #{operatorDesc,jdbcType=INTEGER})
+  </insert>
+  
+  <insert id="insertSelective" parameterType="com.test.atomikos.model.Post">
+    insert into post
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="postId != null">
+        post_id,
+      </if>
+      <if test="postTypeId != null">
+        post_type_id,
+      </if>
+      <if test="postTitle != null">
+        post_title,
+      </if>
+      <if test="postShowCount != null">
+        post_show_count,
+      </if>
+      <if test="postShareCount != null">
+        post_share_count,
+      </if>
+      <if test="postForwardCount != null">
+        post_forward_count,
+      </if>
+      <if test="postContent != null">
+        post_content,
+      </if>
+      <if test="forwardPostId != null">
+        forward_post_id,
+      </if>
+      <if test="userId != null">
+        user_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="creationDate != null">
+        creation_date,
+      </if>
+      <if test="isTop != null">
+        is_top,
+      </if>
+      <if test="topExpireDate != null">
+        top_expire_date,
+      </if>
+      <if test="isElite != null">
+        is_elite,
+      </if>
+      <if test="isRecommend != null">
+        is_recommend,
+      </if>
+      <if test="isPublic != null">
+        is_public,
+      </if>
+      <if test="lastModifyedDate != null">
+        last_modifyed_date,
+      </if>
+      <if test="operatorUserId != null">
+        operator_user_id,
+      </if>
+      <if test="operatorDesc != null">
+        operator_desc,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="postId != null">
+        #{postId,jdbcType=BIGINT},
+      </if>
+      <if test="postTypeId != null">
+        #{postTypeId,jdbcType=BIGINT},
+      </if>
+      <if test="postTitle != null">
+        #{postTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="postShowCount != null">
+        #{postShowCount,jdbcType=INTEGER},
+      </if>
+      <if test="postShareCount != null">
+        #{postShareCount,jdbcType=INTEGER},
+      </if>
+      <if test="postForwardCount != null">
+        #{postForwardCount,jdbcType=INTEGER},
+      </if>
+      <if test="postContent != null">
+        #{postContent,jdbcType=VARCHAR},
+      </if>
+      <if test="forwardPostId != null">
+        #{forwardPostId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="creationDate != null">
+        #{creationDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="isTop != null">
+        #{isTop,jdbcType=INTEGER},
+      </if>
+      <if test="topExpireDate != null">
+        #{topExpireDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="isElite != null">
+        #{isElite,jdbcType=INTEGER},
+      </if>
+      <if test="isRecommend != null">
+        #{isRecommend,jdbcType=INTEGER},
+      </if>
+      <if test="isPublic != null">
+        #{isPublic,jdbcType=INTEGER},
+      </if>
+      <if test="lastModifyedDate != null">
+        #{lastModifyedDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="operatorUserId != null">
+        #{operatorUserId,jdbcType=BIGINT},
+      </if>
+      <if test="operatorDesc != null">
+        #{operatorDesc,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.test.atomikos.model.Post">
+    update post
+    <set>
+      <if test="postTypeId != null">
+        post_type_id = #{postTypeId,jdbcType=BIGINT},
+      </if>
+      <if test="postTitle != null">
+        post_title = #{postTitle,jdbcType=VARCHAR},
+      </if>
+      <if test="postShowCount != null">
+        post_show_count = #{postShowCount,jdbcType=INTEGER},
+      </if>
+      <if test="postShareCount != null">
+        post_share_count = #{postShareCount,jdbcType=INTEGER},
+      </if>
+      <if test="postForwardCount != null">
+        post_forward_count = #{postForwardCount,jdbcType=INTEGER},
+      </if>
+      <if test="postContent != null">
+        post_content = #{postContent,jdbcType=VARCHAR},
+      </if>
+      <if test="forwardPostId != null">
+        forward_post_id = #{forwardPostId,jdbcType=BIGINT},
+      </if>
+      <if test="userId != null">
+        user_id = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="creationDate != null">
+        creation_date = #{creationDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="isTop != null">
+        is_top = #{isTop,jdbcType=INTEGER},
+      </if>
+      <if test="topExpireDate != null">
+        top_expire_date = #{topExpireDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="isElite != null">
+        is_elite = #{isElite,jdbcType=INTEGER},
+      </if>
+      <if test="isRecommend != null">
+        is_recommend = #{isRecommend,jdbcType=INTEGER},
+      </if>
+      <if test="isPublic != null">
+        is_public = #{isPublic,jdbcType=INTEGER},
+      </if>
+      <if test="lastModifyedDate != null">
+        last_modifyed_date = #{lastModifyedDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="operatorUserId != null">
+        operator_user_id = #{operatorUserId,jdbcType=BIGINT},
+      </if>
+      <if test="operatorDesc != null">
+        operator_desc = #{operatorDesc,jdbcType=INTEGER},
+      </if>
+    </set>
+    where post_id = #{postId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.test.atomikos.model.Post">
+    update post
+    set post_type_id = #{postTypeId,jdbcType=BIGINT},
+      post_title = #{postTitle,jdbcType=VARCHAR},
+      post_show_count = #{postShowCount,jdbcType=INTEGER},
+      post_share_count = #{postShareCount,jdbcType=INTEGER},
+      post_forward_count = #{postForwardCount,jdbcType=INTEGER},
+      post_content = #{postContent,jdbcType=VARCHAR},
+      forward_post_id = #{forwardPostId,jdbcType=BIGINT},
+      user_id = #{userId,jdbcType=BIGINT},
+      status = #{status,jdbcType=INTEGER},
+      creation_date = #{creationDate,jdbcType=TIMESTAMP},
+      is_top = #{isTop,jdbcType=INTEGER},
+      top_expire_date = #{topExpireDate,jdbcType=TIMESTAMP},
+      is_elite = #{isElite,jdbcType=INTEGER},
+      is_recommend = #{isRecommend,jdbcType=INTEGER},
+      is_public = #{isPublic,jdbcType=INTEGER},
+      last_modifyed_date = #{lastModifyedDate,jdbcType=TIMESTAMP},
+      operator_user_id = #{operatorUserId,jdbcType=BIGINT},
+      operator_desc = #{operatorDesc,jdbcType=INTEGER}
+    where post_id = #{postId,jdbcType=BIGINT}
+  </update>
+</mapper>
